@@ -5,7 +5,7 @@ app = Flask(__name__)
 
 # Configurações do banco de dados - substitua pelos seus valores
 DB_HOST = "datasources.postgres.database.azure.com"
-DB_NAME = "db_product_manager_prd"
+DB_NAME = "db_smart_capital_api_prd"
 DB_USER = "a55dba"
 DB_PASS = "Bzjlep2010#lima"
 
