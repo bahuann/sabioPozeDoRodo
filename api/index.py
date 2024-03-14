@@ -11,10 +11,6 @@ DB_USER = "a55dba"
 DB_PASS = "Bzjlep2010#lima"
 
 @app.route('/')
-def hello_world():
-    return "Hello, World!"
-
-@app.route('/test_db_connection')
 def test_db_connection():
     try:
         conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
