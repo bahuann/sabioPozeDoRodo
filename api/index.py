@@ -25,16 +25,14 @@ def get_db_connection():
         return conn
     except psycopg2.Error as e:
         return str(e)
-
 @app.route('/total_orders_by_status')
 def total_orders_by_status():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT status, COUNT(*) AS number_of_orders FROM orders GROUP BY status;")
+    cur.execute("SELECT status, COUNT(*) AS number_of_orders FROM smart_capital_customer.orders GROUP BY status;")
     results = cur.fetchall()
     cur.close()
     conn.close()
-    # Formatting results
     formatted_results = [{"status": row[0], "number_of_orders": row[1]} for row in results]
     return jsonify(formatted_results)
 
@@ -44,14 +42,13 @@ def average_time_by_status():
     cur = conn.cursor()
     cur.execute("""
         SELECT o.status, AVG(age(h.created_at, o.created_at)) AS average_duration 
-        FROM orders o 
-        INNER JOIN orders_histories h ON o.id = h.order_id 
+        FROM smart_capital_customer.orders o 
+        INNER JOIN smart_capital_customer.orders_histories h ON o.id = h.order_id 
         GROUP BY o.status;
     """)
     results = cur.fetchall()
     cur.close()
     conn.close()
-    # Formatting results
     formatted_results = [{"status": row[0], "average_duration": str(row[1])} for row in results]
     return jsonify(formatted_results)
 
@@ -66,7 +63,7 @@ def status_stability_duration():
                 COUNT(*) AS number_of_orders,
                 MAX(created_at) AS last_status_change
             FROM
-                orders
+                smart_capital_customer.orders
             GROUP BY
                 status
         )
@@ -80,7 +77,6 @@ def status_stability_duration():
     results = cur.fetchall()
     cur.close()
     conn.close()
-    # Formatting results
     formatted_results = [{"status": row[0], "number_of_orders": row[1], "stability_duration": str(row[2])} for row in results]
     return jsonify(formatted_results)
 
@@ -94,16 +90,17 @@ def time_since_last_change():
             MIN(created_at) AS oldest_status_change,
             NOW() - MIN(created_at) AS time_since_last_change
         FROM
-            orders_histories
+            smart_capital_customer.orders_histories
         GROUP BY
             status;
     """)
     results = cur.fetchall()
     cur.close()
     conn.close()
-    # Formatting results
     formatted_results = [{"status": row[0], "oldest_status_change": str(row[1]), "time_since_last_change": str(row[2])} for row in results]
     return jsonify(formatted_results)
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
