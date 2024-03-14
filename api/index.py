@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 # Database settings - replace with your values
 DB_HOST = "datasources.postgres.database.azure.com"
-DB_NAME = "db_product_manager_prd"
+DB_NAME = "db_smart_capital_api_prd"
 DB_USER = "a55dba"
 DB_PASS = "Bzjlep2010#lima"
 
@@ -32,7 +32,7 @@ def total_orders_by_status():
         conn = get_db_connection()
         cur = conn.cursor()
         # Fully qualified query
-        cur.execute("SELECT status, COUNT(*) AS number_of_orders FROM db_smart_capital_api_prd.orders GROUP BY status;")
+        cur.execute("SELECT status, COUNT(*) AS number_of_orders FROM smart_capital_customer.orders GROUP BY status;")
         results = cur.fetchall()
         cur.close()
         conn.close()
@@ -48,8 +48,8 @@ def average_time_by_status():
         # Fully qualified query
         cur.execute("""
             SELECT o.status, AVG(age(h.created_at, o.created_at)) AS average_duration 
-            FROM db_smart_capital_api_prd.orders o 
-            INNER JOIN db_smart_capital_api_prd.orders_histories h ON o.id = h.order_id 
+            FROM smart_capital_customer.orders o 
+            INNER JOIN smart_capital_customer.orders_histories h ON o.id = h.order_id 
             GROUP BY o.status;
         """)
         results = cur.fetchall()
