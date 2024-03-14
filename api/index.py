@@ -120,7 +120,7 @@ def clients_awaiting_credit_action():
             WHERE 
                 h.status = 'calculating_proposal' 
             GROUP BY 
-                c.name, o.uuid;
+                c.name, o.uuid order by proposal_calculation_start_time asc;
         """)
         results = cur.fetchall()
         cur.close()
