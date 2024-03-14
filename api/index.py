@@ -28,13 +28,11 @@ def get_db_connection():
 
 @app.route('/total_orders_by_status')
 def total_orders_by_status():
-    conn = get_db_connection()
-    if isinstance(conn, str):
-        return jsonify({"error": conn}), 500
-
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     try:
-        cur.execute("SELECT status, COUNT(*) AS number_of_orders FROM orders GROUP BY status;")
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Fully qualified query
+        cur.execute("SELECT status, COUNT(*) AS number_of_orders FROM db_smart_capital_api_prd.orders GROUP BY status;")
         results = cur.fetchall()
         cur.close()
         conn.close()
@@ -44,19 +42,23 @@ def total_orders_by_status():
 
 @app.route('/average_time_by_status')
 def average_time_by_status():
-    conn = get_db_connection()
-    if isinstance(conn, str):
-        return jsonify({"error": conn}), 500
-
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     try:
-        cur.execute("SELECT o.status, AVG(age(h.created_at, o.created_at)) AS average_duration FROM orders o INNER JOIN orders_histories h ON o.id = h.order_id GROUP BY o.status;")
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Fully qualified query
+        cur.execute("""
+            SELECT o.status, AVG(age(h.created_at, o.created_at)) AS average_duration 
+            FROM db_smart_capital_api_prd.orders o 
+            INNER JOIN db_smart_capital_api_prd.orders_histories h ON o.id = h.order_id 
+            GROUP BY o.status;
+        """)
         results = cur.fetchall()
         cur.close()
         conn.close()
         return jsonify([dict(row) for row in results])
     except psycopg2.Error as e:
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
