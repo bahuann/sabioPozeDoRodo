@@ -100,6 +100,40 @@ def time_since_last_change():
     formatted_results = [{"status": row[0], "oldest_status_change": str(row[1]), "time_since_last_change": str(row[2])} for row in results]
     return jsonify(formatted_results)
 
+@app.route('/clients_awaiting_credit_action')
+def clients_awaiting_credit_action():
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        cur.execute("""
+            SELECT 
+                c.name AS client_name, 
+                o.uuid AS order_uuid, 
+                MAX(h.created_at) AS proposal_calculation_start_time,
+                NOW() - MAX(h.created_at) AS time_since_proposal_calculation_started
+            FROM 
+                smart_capital_customer.orders o 
+            INNER JOIN 
+                smart_capital_customer.orders_histories h ON o.id = h.order_id
+            INNER JOIN 
+                smart_capital_customer.customers c ON o.customer_id = c.id
+            WHERE 
+                h.status = 'calculating_proposal' 
+            GROUP BY 
+                c.name, o.uuid;
+        """)
+        results = cur.fetchall()
+        cur.close()
+        conn.close()
+        formatted_results = [{
+            "client_name": row['client_name'],
+            "order_uuid": row['order_uuid'],
+            "proposal_calculation_start_time": str(row['proposal_calculation_start_time']),
+            "time_since_proposal_calculation_started": str(row['time_since_proposal_calculation_started'])
+        } for row in results]
+        return jsonify(formatted_results)
+    except psycopg2.Error as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':
