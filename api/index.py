@@ -12,7 +12,7 @@ except FileNotFoundError:
 
 def validate_api_key(api_key):
     # Implement your API key validation logic here
-    valid_api_keys = ["123123123"]
+    valid_api_keys = ["your-secure-api-key"]
     return api_key in valid_api_keys
 
 @app.route('/transactions', methods=['GET'])
@@ -29,14 +29,21 @@ def add_transaction():
     if not api_key or not validate_api_key(api_key):
         return jsonify({'error': 'Unauthorized'}), 401
 
-    new_transaction = request.json
-    transactions.append(new_transaction)
-    
-    # Write transactions to file
-    with open('transactions.json', 'w') as file:
-        json.dump(transactions, file, indent=4)
-    
-    return jsonify(new_transaction), 201
+    try:
+        new_transaction = request.json
+        transactions.append(new_transaction)
+        
+        # Write transactions to file
+        with open('transactions.json', 'w') as file:
+            json.dump(transactions, file, indent=4)
+        
+        return jsonify(new_transaction), 201
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return jsonify({'error': 'Internal Server Error'}), 500
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
+
+if __name__ == '__main__':
+    app.run(debug=True)
