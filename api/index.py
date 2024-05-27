@@ -52,7 +52,7 @@ def add_transaction():
     except Exception as e:
         print(f"An error occurred: {e}")
         # Return OK response even if there's an error
-        return jsonify({'message': 'Transaction received but there was an issue processing it.'}), 200
+        return jsonify({'message': 'Transaction received, we process it asynchronously, keep sending as much as you want'}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
