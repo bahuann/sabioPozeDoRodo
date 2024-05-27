@@ -1,43 +1,44 @@
 from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+import psycopg2
 import os
+from datetime import datetime
 
 app = Flask(__name__)
 
 # Configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('POSTGRES_URL')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+DATABASE_URL = os.getenv('POSTGRES_URL')
 
-db = SQLAlchemy(app)
+def get_db_connection():
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+    return conn
 
-# Define the Transaction model
-class Transaction(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    driver_id = db.Column(db.String(50), nullable=False)
-    order_id = db.Column(db.String(50), nullable=False)
-    order_amt = db.Column(db.Float, nullable=False)
-    order_fee_amt = db.Column(db.Float, nullable=False)
-    city_nm = db.Column(db.String(100), nullable=False)
-    order_start_dttm = db.Column(db.DateTime, nullable=False)
-    order_end_dttm = db.Column(db.DateTime, nullable=False)
-    order_dt = db.Column(db.Date, nullable=False)
+# Define a helper function to initialize the database
+def init_db():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS transactions (
+            id SERIAL PRIMARY KEY,
+            driver_id VARCHAR(50) NOT NULL,
+            order_id VARCHAR(50) NOT NULL,
+            order_amt FLOAT NOT NULL,
+            order_fee_amt FLOAT NOT NULL,
+            city_nm VARCHAR(100) NOT NULL,
+            order_start_dttm TIMESTAMP NOT NULL,
+            order_end_dttm TIMESTAMP NOT NULL,
+            order_dt DATE NOT NULL
+        )
+    ''')
+    conn.commit()
+    cursor.close()
+    conn.close()
 
-    def to_dict(self):
-        return {
-            "driver_id": self.driver_id,
-            "order_id": self.order_id,
-            "order_amt": self.order_amt,
-            "order_fee_amt": self.order_fee_amt,
-            "city_nm": self.city_nm,
-            "order_start_dttm": self.order_start_dttm.isoformat(),
-            "order_end_dttm": self.order_end_dttm.isoformat(),
-            "order_dt": self.order_dt.isoformat()
-        }
+# Initialize the database
+init_db()
 
 def validate_api_key(api_key):
     # Implement your API key validation logic here
-    valid_api_keys = ["123123123"]
+    valid_api_keys = ["your-secure-api-key"]
     return api_key in valid_api_keys
 
 @app.route('/transactions', methods=['GET'])
@@ -46,8 +47,26 @@ def get_transactions():
     if not api_key or not validate_api_key(api_key):
         return jsonify({'error': 'Unauthorized'}), 401
 
-    transactions = Transaction.query.all()
-    return jsonify([transaction.to_dict() for transaction in transactions]), 200
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM transactions')
+    transactions = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    result = []
+    for transaction in transactions:
+        result.append({
+            "driver_id": transaction[1],
+            "order_id": transaction[2],
+            "order_amt": transaction[3],
+            "order_fee_amt": transaction[4],
+            "city_nm": transaction[5],
+            "order_start_dttm": transaction[6].isoformat(),
+            "order_end_dttm": transaction[7].isoformat(),
+            "order_dt": transaction[8].isoformat()
+        })
+    return jsonify(result), 200
 
 @app.route('/transactions', methods=['POST'])
 def add_transaction():
@@ -57,23 +76,31 @@ def add_transaction():
 
     try:
         new_transaction = request.json
-        transaction = Transaction(
-            driver_id=new_transaction['driver_id'],
-            order_id=new_transaction['order_id'],
-            order_amt=new_transaction['order_amt'],
-            order_fee_amt=new_transaction['order_fee_amt'],
-            city_nm=new_transaction['city_nm'],
-            order_start_dttm=datetime.fromisoformat(new_transaction['order_start_dttm']),
-            order_end_dttm=datetime.fromisoformat(new_transaction['order_end_dttm']),
-            order_dt=datetime.fromisoformat(new_transaction['order_dt']).date()
-        )
-        db.session.add(transaction)
-        db.session.commit()
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO transactions (driver_id, order_id, order_amt, order_fee_amt, city_nm, order_start_dttm, order_end_dttm, order_dt)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+        ''', (
+            new_transaction['driver_id'],
+            new_transaction['order_id'],
+            new_transaction['order_amt'],
+            new_transaction['order_fee_amt'],
+            new_transaction['city_nm'],
+            datetime.fromisoformat(new_transaction['order_start_dttm']),
+            datetime.fromisoformat(new_transaction['order_end_dttm']),
+            datetime.fromisoformat(new_transaction['order_dt']).date()
+        ))
+        new_id = cursor.fetchone()[0]
+        conn.commit()
+        cursor.close()
+        conn.close()
 
-        return jsonify(transaction.to_dict()), 201
+        new_transaction['id'] = new_id
+        return jsonify(new_transaction), 201
     except Exception as e:
         print(f"An error occurred: {e}")
-        # Return OK response even if there's an error
         return jsonify({'message': 'Transaction received but there was an issue processing it.'}), 200
 
 if __name__ == '__main__':
