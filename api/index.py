@@ -6,7 +6,7 @@ import os
 app = Flask(__name__)
 
 # Configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('POSTGRES_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -37,7 +37,7 @@ class Transaction(db.Model):
 
 def validate_api_key(api_key):
     # Implement your API key validation logic here
-    valid_api_keys = ["123123123"]
+    valid_api_keys = ["your-secure-api-key"]
     return api_key in valid_api_keys
 
 @app.route('/transactions', methods=['GET'])
