@@ -1,21 +1,14 @@
 from flask import Flask, request, jsonify
+import json
 
 app = Flask(__name__)
 
-# Example data store
-transactions = [
-    {
-        "driver_id": "D123",
-        "order_id": "O456",
-        "order_amt": 100.0,
-        "order_fee_amt": 5.0,
-        "city_nm": "New York",
-        "order_start_dttm": "2023-01-01T10:00:00",
-        "order_end_dttm": "2023-01-01T10:30:00",
-        "order_dt": "2023-01-01"
-    },
-    # Add more transactions as needed
-]
+# Example data store (initially load from file if exists)
+try:
+    with open('transactions.json', 'r') as file:
+        transactions = json.load(file)
+except FileNotFoundError:
+    transactions = []
 
 def validate_api_key(api_key):
     # Implement your API key validation logic here
@@ -29,6 +22,21 @@ def get_transactions():
         return jsonify({'error': 'Unauthorized'}), 401
 
     return jsonify(transactions), 200
+
+@app.route('/transactions', methods=['POST'])
+def add_transaction():
+    api_key = request.headers.get('API-Key')
+    if not api_key or not validate_api_key(api_key):
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    new_transaction = request.json
+    transactions.append(new_transaction)
+    
+    # Write transactions to file
+    with open('transactions.json', 'w') as file:
+        json.dump(transactions, file, indent=4)
+    
+    return jsonify(new_transaction), 201
 
 if __name__ == '__main__':
     app.run()
