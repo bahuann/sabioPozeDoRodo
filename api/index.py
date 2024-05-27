@@ -12,7 +12,7 @@ except FileNotFoundError:
 
 def validate_api_key(api_key):
     # Implement your API key validation logic here
-    valid_api_keys = ["your-secure-api-key"]
+    valid_api_keys = ["123123123"]
     return api_key in valid_api_keys
 
 @app.route('/transactions', methods=['GET'])
