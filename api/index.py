@@ -19,14 +19,20 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS transactions (
             id SERIAL PRIMARY KEY,
-            driver_id VARCHAR(50) NOT NULL,
-            order_id VARCHAR(50) NOT NULL,
-            order_amt FLOAT NOT NULL,
-            order_fee_amt FLOAT NOT NULL,
-            city_nm VARCHAR(100) NOT NULL,
-            order_start_dttm TIMESTAMP NOT NULL,
-            order_end_dttm TIMESTAMP NOT NULL,
-            order_dt DATE NOT NULL
+            serie VARCHAR(50) NOT NULL,
+            numero_do_conhecimento VARCHAR(50) NOT NULL,
+            data_de_emissao TIMESTAMP NOT NULL,
+            cnpj_do_tomador VARCHAR(20) NOT NULL,
+            cliente VARCHAR(100) NOT NULL,
+            cnpj_do_destinatario VARCHAR(20),
+            cpf_do_destinatario VARCHAR(11),
+            razao_social_do_destinatario VARCHAR(100) NOT NULL,
+            ie_do_destinatario VARCHAR(20),
+            codigo_numerico VARCHAR(20) NOT NULL,
+            identificador_do_cte VARCHAR(50) NOT NULL,
+            status_do_cte VARCHAR(50) NOT NULL,
+            valor_total_do_cte FLOAT NOT NULL,
+            cpf_motorista VARCHAR(11)
         )
     ''')
     conn.commit()
@@ -57,14 +63,21 @@ def get_transactions():
     result = []
     for transaction in transactions:
         result.append({
-            "driver_id": transaction[1],
-            "order_id": transaction[2],
-            "order_amt": transaction[3],
-            "order_fee_amt": transaction[4],
-            "city_nm": transaction[5],
-            "order_start_dttm": transaction[6].isoformat(),
-            "order_end_dttm": transaction[7].isoformat(),
-            "order_dt": transaction[8].isoformat()
+            "id": transaction[0],
+            "serie": transaction[1],
+            "numero_do_conhecimento": transaction[2],
+            "data_de_emissao": transaction[3].isoformat(),
+            "cnpj_do_tomador": transaction[4],
+            "cliente": transaction[5],
+            "cnpj_do_destinatario": transaction[6],
+            "cpf_do_destinatario": transaction[7],
+            "razao_social_do_destinatario": transaction[8],
+            "ie_do_destinatario": transaction[9],
+            "codigo_numerico": transaction[10],
+            "identificador_do_cte": transaction[11],
+            "status_do_cte": transaction[12],
+            "valor_total_do_cte": transaction[13],
+            "cpf_motorista": transaction[14]
         })
     return jsonify(result), 200
 
@@ -79,18 +92,24 @@ def add_transaction():
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO transactions (driver_id, order_id, order_amt, order_fee_amt, city_nm, order_start_dttm, order_end_dttm, order_dt)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO transactions (serie, numero_do_conhecimento, data_de_emissao, cnpj_do_tomador, cliente, cnpj_do_destinatario, cpf_do_destinatario, razao_social_do_destinatario, ie_do_destinatario, codigo_numerico, identificador_do_cte, status_do_cte, valor_total_do_cte, cpf_motorista)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         ''', (
-            new_transaction['driver_id'],
-            new_transaction['order_id'],
-            new_transaction['order_amt'],
-            new_transaction['order_fee_amt'],
-            new_transaction['city_nm'],
-            datetime.fromisoformat(new_transaction['order_start_dttm']),
-            datetime.fromisoformat(new_transaction['order_end_dttm']),
-            datetime.fromisoformat(new_transaction['order_dt']).date()
+            new_transaction['serie'],
+            new_transaction['numero_do_conhecimento'],
+            datetime.fromisoformat(new_transaction['data_de_emissao']),
+            new_transaction['cnpj_do_tomador'],
+            new_transaction['cliente'],
+            new_transaction.get('cnpj_do_destinatario'),
+            new_transaction.get('cpf_do_destinatario'),
+            new_transaction['razao_social_do_destinatario'],
+            new_transaction.get('ie_do_destinatario'),
+            new_transaction['codigo_numerico'],
+            new_transaction['identificador_do_cte'],
+            new_transaction['status_do_cte'],
+            new_transaction['valor_total_do_cte'],
+            new_transaction.get('cpf_motorista')
         ))
         new_id = cursor.fetchone()[0]
         conn.commit()
