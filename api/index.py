@@ -112,6 +112,31 @@ def add_transaction():
 
         new_transaction['id'] = new_id
         return jsonify(new_transaction), 201
+@app.route('/advance-request', methods=['POST'])
+def request_advance():
+    api_key = request.headers.get('API-Key')
+    if not api_key or not validate_api_key(api_key):
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        advance_request = request.json
+        cpf_motorista = advance_request['cpf_motorista']
+        id_ultima_corrida = advance_request['id_ultima_corrida']
+        chave_pix_motorista = advance_request['chave_pix_motorista']
+        valor_antecipacao = advance_request['valor_antecipacao']
+
+        # Validate and process the request (pseudo-code, implement your own logic)
+        # Example validations:
+        # - Verify CPF is valid and registered
+        # - Verify last trip ID is valid and belongs to the driver
+        # - Verify PIX key belongs to the driver
+        # - Ensure advance amount is positive and within allowed limits
+
+        # Assuming validations pass and advance request is processed:
+        return jsonify({
+            "status": "Sucesso",
+            "mensagem": "A antecipação foi aprovada e o valor será creditado na conta Pix do motorista em breve."
+        }), 200
     except Exception as e:
         print(f"An error occurred: {e}")
         return jsonify({'message': 'Transaction received but there was an issue processing it.'}), 200
