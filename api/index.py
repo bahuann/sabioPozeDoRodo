@@ -33,6 +33,16 @@ def init_db():
             cpf_motorista VARCHAR(11)
         )
     ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS driver_advances (
+            id SERIAL PRIMARY KEY,
+            cpf_motorista VARCHAR(11) NOT NULL,
+            id_ultima_corrida VARCHAR(50) NOT NULL,
+            chave_pix_motorista VARCHAR(100) NOT NULL,
+            valor_antecipacao FLOAT NOT NULL,
+            request_time TIMESTAMP NOT NULL
+        )
+    ''')
     conn.commit()
     cursor.close()
     conn.close()
@@ -116,6 +126,43 @@ def add_transaction():
     except Exception as e:
         print(f"An error occurred: {e}")
         return jsonify({'message': 'Transaction received but there was an issue processing it.'}), 200
+
+@app.route('/advance-request', methods=['POST'])
+def request_advance():
+    api_key = request.headers.get('API-Key')
+    if not api_key or not validate_api_key(api_key):
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        advance_request = request.json
+        cpf_motorista = advance_request['cpf_motorista']
+        id_ultima_corrida = advance_request['id_ultima_corrida']
+        chave_pix_motorista = advance_request['chave_pix_motorista']
+        valor_antecipacao = advance_request['valor_antecipacao']
+        request_time = datetime.now()
+
+        # Insert advance request data into the database
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO driver_advances (cpf_motorista, id_ultima_corrida, chave_pix_motorista, valor_antecipacao, request_time)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id
+        ''', (cpf_motorista, id_ultima_corrida, chave_pix_motorista, valor_antecipacao, request_time))
+        new_id = cursor.fetchone()[0]
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "status": "Sucesso",
+            "mensagem": "A antecipação foi aprovada e o valor será creditado na conta Pix do motorista em breve.",
+            "id": new_id
+        }), 200
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return jsonify({'error': 'An error occurred while processing the advance request'}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)
