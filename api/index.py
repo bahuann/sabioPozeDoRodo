@@ -24,11 +24,9 @@ def init_db():
             data_de_emissao TIMESTAMP NOT NULL,
             cnpj_do_tomador VARCHAR(20) NOT NULL,
             cliente VARCHAR(100) NOT NULL,
-            cnpj_do_destinatario VARCHAR(20),
-            cpf_do_destinatario VARCHAR(11),
+            taxid_destinatario VARCHAR(20),
             razao_social_do_destinatario VARCHAR(100) NOT NULL,
             ie_do_destinatario VARCHAR(20),
-            codigo_numerico VARCHAR(20) NOT NULL,
             identificador_do_cte VARCHAR(50) NOT NULL,
             status_do_cte VARCHAR(50) NOT NULL,
             valor_total_do_cte FLOAT NOT NULL,
@@ -69,15 +67,13 @@ def get_transactions():
             "data_de_emissao": transaction[3].isoformat(),
             "cnpj_do_tomador": transaction[4],
             "cliente": transaction[5],
-            "cnpj_do_destinatario": transaction[6],
-            "cpf_do_destinatario": transaction[7],
-            "razao_social_do_destinatario": transaction[8],
-            "ie_do_destinatario": transaction[9],
-            "codigo_numerico": transaction[10],
-            "identificador_do_cte": transaction[11],
-            "status_do_cte": transaction[12],
-            "valor_total_do_cte": transaction[13],
-            "cpf_motorista": transaction[14]
+            "taxid_destinatario": transaction[6],
+            "razao_social_do_destinatario": transaction[7],
+            "ie_do_destinatario": transaction[8],
+            "identificador_do_cte": transaction[9],
+            "status_do_cte": transaction[10],
+            "valor_total_do_cte": transaction[11],
+            "cpf_motorista": transaction[12]
         })
     return jsonify(result), 200
 
@@ -92,8 +88,8 @@ def add_transaction():
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO transactions (serie, numero_do_conhecimento, data_de_emissao, cnpj_do_tomador, cliente, cnpj_do_destinatario, cpf_do_destinatario, razao_social_do_destinatario, ie_do_destinatario, codigo_numerico, identificador_do_cte, status_do_cte, valor_total_do_cte, cpf_motorista)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO transactions (serie, numero_do_conhecimento, data_de_emissao, cnpj_do_tomador, cliente, taxid_destinatario, razao_social_do_destinatario, ie_do_destinatario, identificador_do_cte, status_do_cte, valor_total_do_cte, cpf_motorista)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         ''', (
             new_transaction['serie'],
@@ -101,11 +97,9 @@ def add_transaction():
             datetime.fromisoformat(new_transaction['data_de_emissao']),
             new_transaction['cnpj_do_tomador'],
             new_transaction['cliente'],
-            new_transaction.get('cnpj_do_destinatario'),
-            new_transaction.get('cpf_do_destinatario'),
+            new_transaction.get('taxid_destinatario'),
             new_transaction['razao_social_do_destinatario'],
             new_transaction.get('ie_do_destinatario'),
-            new_transaction['codigo_numerico'],
             new_transaction['identificador_do_cte'],
             new_transaction['status_do_cte'],
             new_transaction['valor_total_do_cte'],
