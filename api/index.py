@@ -17,7 +17,7 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS transactions (
+        CREATE TABLE IF NOT EXISTS companyTrips (
             id SERIAL PRIMARY KEY,
             serie VARCHAR(50) NOT NULL,
             numero_do_conhecimento VARCHAR(50) NOT NULL,
@@ -43,6 +43,27 @@ def init_db():
             request_time TIMESTAMP NOT NULL
         )
     ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS orders_history (
+            id SERIAL PRIMARY KEY,
+            order_id VARCHAR(50) NOT NULL,
+            payment_method VARCHAR(50) NOT NULL,
+            value FLOAT NOT NULL,
+            order_time TIMESTAMP NOT NULL
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS driver_rides (
+            id SERIAL PRIMARY KEY,
+            driver_id VARCHAR(50) NOT NULL,
+            user_id VARCHAR(50) NOT NULL,
+            start_time TIMESTAMP NOT NULL,
+            end_time TIMESTAMP NOT NULL,
+            start_location VARCHAR(100) NOT NULL,
+            end_location VARCHAR(100) NOT NULL,
+            fare FLOAT NOT NULL
+        )
+    ''')
     conn.commit()
     cursor.close()
     conn.close()
@@ -55,73 +76,73 @@ def validate_api_key(api_key):
     valid_api_keys = ["R//ZD'!95D&&4EG"]
     return api_key in valid_api_keys
 
-@app.route('/transactions', methods=['GET'])
-def get_transactions():
+@app.route('/companyTrips', methods=['GET'])
+def get_companyTrips():
     api_key = request.headers.get('API-Key')
     if not api_key or not validate_api_key(api_key):
         return jsonify({'error': 'Unauthorized'}), 401
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM transactions')
-    transactions = cursor.fetchall()
+    cursor.execute('SELECT * FROM companyTrips')
+    trips = cursor.fetchall()
     cursor.close()
     conn.close()
 
     result = []
-    for transaction in transactions:
+    for trip in trips:
         result.append({
-            "id": transaction[0],
-            "serie": transaction[1],
-            "numero_do_conhecimento": transaction[2],
-            "data_de_emissao": transaction[3].isoformat(),
-            "cnpj_do_tomador": transaction[4],
-            "cliente": transaction[5],
-            "taxid_destinatario": transaction[6],
-            "razao_social_do_destinatario": transaction[7],
-            "ie_do_destinatario": transaction[8],
-            "identificador_do_cte": transaction[9],
-            "status_do_cte": transaction[10],
-            "valor_total_do_cte": transaction[11],
-            "cpf_motorista": transaction[12]
+            "id": trip[0],
+            "serie": trip[1],
+            "numero_do_conhecimento": trip[2],
+            "data_de_emissao": trip[3].isoformat(),
+            "cnpj_do_tomador": trip[4],
+            "cliente": trip[5],
+            "taxid_destinatario": trip[6],
+            "razao_social_do_destinatario": trip[7],
+            "ie_do_destinatario": trip[8],
+            "identificador_do_cte": trip[9],
+            "status_do_cte": trip[10],
+            "valor_total_do_cte": trip[11],
+            "cpf_motorista": trip[12]
         })
     return jsonify(result), 200
 
-@app.route('/transactions', methods=['POST'])
-def add_transaction():
+@app.route('/companyTrips', methods=['POST'])
+def add_companyTrip():
     api_key = request.headers.get('API-Key')
     if not api_key or not validate_api_key(api_key):
         return jsonify({'error': 'Unauthorized'}), 401
 
     try:
-        new_transaction = request.json
+        new_trip = request.json
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO transactions (serie, numero_do_conhecimento, data_de_emissao, cnpj_do_tomador, cliente, taxid_destinatario, razao_social_do_destinatario, ie_do_destinatario, identificador_do_cte, status_do_cte, valor_total_do_cte, cpf_motorista)
+            INSERT INTO companyTrips (serie, numero_do_conhecimento, data_de_emissao, cnpj_do_tomador, cliente, taxid_destinatario, razao_social_do_destinatario, ie_do_destinatario, identificador_do_cte, status_do_cte, valor_total_do_cte, cpf_motorista)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         ''', (
-            new_transaction['serie'],
-            new_transaction['numero_do_conhecimento'],
-            datetime.fromisoformat(new_transaction['data_de_emissao']),
-            new_transaction['cnpj_do_tomador'],
-            new_transaction['cliente'],
-            new_transaction.get('taxid_destinatario'),
-            new_transaction['razao_social_do_destinatario'],
-            new_transaction.get('ie_do_destinatario'),
-            new_transaction['identificador_do_cte'],
-            new_transaction['status_do_cte'],
-            new_transaction['valor_total_do_cte'],
-            new_transaction.get('cpf_motorista')
+            new_trip['serie'],
+            new_trip['numero_do_conhecimento'],
+            datetime.fromisoformat(new_trip['data_de_emissao']),
+            new_trip['cnpj_do_tomador'],
+            new_trip['cliente'],
+            new_trip.get('taxid_destinatario'),
+            new_trip['razao_social_do_destinatario'],
+            new_trip.get('ie_do_destinatario'),
+            new_trip['identificador_do_cte'],
+            new_trip['status_do_cte'],
+            new_trip['valor_total_do_cte'],
+            new_trip.get('cpf_motorista')
         ))
         new_id = cursor.fetchone()[0]
         conn.commit()
         cursor.close()
         conn.close()
 
-        new_transaction['id'] = new_id
-        return jsonify(new_transaction), 201
+        new_trip['id'] = new_id
+        return jsonify(new_trip), 201
 
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -163,6 +184,81 @@ def request_advance():
     except Exception as e:
         print(f"An error occurred: {e}")
         return jsonify({'error': 'An error occurred while processing the advance request'}), 400
+
+@app.route('/orders-history', methods=['POST'])
+def add_orders_history():
+    api_key = request.headers.get('API-Key')
+    if not api_key or not validate_api_key(api_key):
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        order_data = request.json
+        order_id = order_data['order_id']
+        payment_method = order_data['payment_method']
+        value = order_data['value']
+        order_time = datetime.fromisoformat(order_data['order_time'])
+
+        # Insert order data into the database
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO orders_history (order_id, payment_method, value, order_time)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id
+        ''', (order_id, payment_method, value, order_time))
+        new_id = cursor.fetchone()[0]
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "status": "Sucesso",
+            "mensagem": "Histórico do pedido foi registrado com sucesso.",
+            "id": new_id
+        }), 200
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return jsonify({'error': 'An error occurred while processing the order data'}), 400
+
+@app.route('/driver-rides', methods=['POST'])
+def add_driver_ride():
+    api_key = request.headers.get('API-Key')
+    if not api_key or not validate_api_key(api_key):
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        ride_data = request.json
+        driver_id = ride_data['driver_id']
+        user_id = ride_data['user_id']
+        start_time = datetime.fromisoformat(ride_data['start_time'])
+        end_time = datetime.fromisoformat(ride_data['end_time'])
+        start_location = ride_data['start_location']
+        end_location = ride_data['end_location']
+        fare = ride_data['fare']
+
+        # Insert driver ride data into the database
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO driver_rides (driver_id, user_id, start_time, end_time, start_location, end_location, fare)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+        ''', (driver_id, user_id, start_time, end_time, start_location, end_location, fare))
+        new_id = cursor.fetchone()[0]
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "status": "Sucesso",
+            "mensagem": "Corrida do motorista foi registrada com sucesso.",
+            "id": new_id
+        }), 200
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return jsonify({'error': 'An error occurred while processing the ride data'}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)
