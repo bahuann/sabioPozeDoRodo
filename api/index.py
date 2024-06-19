@@ -220,8 +220,7 @@ def add_orders_history():
     except Exception as e:
         print(f"An error occurred: {e}")
         return jsonify({'error': 'An error occurred while processing the order data'}), 400
-
-  except ValueError as ve:
+    except ValueError as ve:
         print(f"ValueError: {ve}")
         return jsonify({'error': 'Invalid input data format'}), 400
     except psycopg2.DatabaseError as de:
