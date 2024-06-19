@@ -230,5 +230,57 @@ def add_orders_history():
         print(f"An unexpected error occurred: {e}")
         return jsonify({'error': 'An unexpected error occurred'}), 400
 
+
+@app.route('/driver-rides', methods=['POST'])
+def add_driver_ride():
+    api_key = request.headers.get('API-Key')
+    if not api_key or not validate_api_key(api_key):
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        ride_data = request.json
+        print(f"Received ride data: {ride_data}")
+
+        driver_id = ride_data['driver_id']
+        order_id = ride_data['order_id']
+        order_amt = float(ride_data['order_amt'])
+        order_fee_amt = float(ride_data['order_fee_amt'])
+        city_nm = ride_data['city_nm']
+        order_start_dttm = datetime.fromisoformat(ride_data['order_start_dttm'])
+        order_end_dttm = datetime.fromisoformat(ride_data['order_end_dttm'])
+        order_dt = datetime.fromisoformat(ride_data['order_dt'])
+
+        print(f"Processed data - driver_id: {driver_id}, order_id: {order_id}, order_amt: {order_amt}, order_fee_amt: {order_fee_amt}, city_nm: {city_nm}, order_start_dttm: {order_start_dttm}, order_end_dttm: {order_end_dttm}, order_dt: {order_dt}")
+
+        # Insert driver ride data into the database
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO driver_rides (driver_id, order_id, order_amt, order_fee_amt, city_nm, order_start_dttm, order_end_dttm, order_dt)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+        ''', (driver_id, order_id, order_amt, order_fee_amt, city_nm, order_start_dttm, order_end_dttm, order_dt))
+        new_id = cursor.fetchone()[0]
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "status": "Sucesso",
+            "mensagem": "Corrida do motorista foi registrada com sucesso.",
+            "id": new_id
+        }), 200
+
+    except ValueError as ve:
+        print(f"ValueError: {ve}")
+        return jsonify({'error': 'Invalid input data format'}), 400
+    except psycopg2.DatabaseError as de:
+        print(f"DatabaseError: {de}")
+        return jsonify({'error': 'Database error occurred'}), 500
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({'error': 'An unexpected error occurred'}), 400
+
+
 if __name__ == '__main__':
     app.run(debug=True)
