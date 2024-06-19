@@ -230,21 +230,22 @@ def add_driver_ride():
     try:
         ride_data = request.json
         driver_id = ride_data['driver_id']
-        user_id = ride_data['user_id']
-        start_time = datetime.fromisoformat(ride_data['start_time'])
-        end_time = datetime.fromisoformat(ride_data['end_time'])
-        start_location = ride_data['start_location']
-        end_location = ride_data['end_location']
-        fare = ride_data['fare']
+        order_id = ride_data['order_id']
+        order_amt = ride_data['order_amt']
+        order_fee_amt = ride_data['order_fee_amt']
+        city_nm = ride_data['city_nm']
+        order_start_dttm = datetime.fromisoformat(ride_data['order_start_dttm'])
+        order_end_dttm = datetime.fromisoformat(ride_data['order_end_dttm'])
+        order_dt = datetime.fromisoformat(ride_data['order_dt'])
 
         # Insert driver ride data into the database
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO driver_rides (driver_id, user_id, start_time, end_time, start_location, end_location, fare)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO driver_rides (driver_id, order_id, order_amt, order_fee_amt, city_nm, order_start_dttm, order_end_dttm, order_dt)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
-        ''', (driver_id, user_id, start_time, end_time, start_location, end_location, fare))
+        ''', (driver_id, order_id, order_amt, order_fee_amt, city_nm, order_start_dttm, order_end_dttm, order_dt))
         new_id = cursor.fetchone()[0]
         conn.commit()
         cursor.close()
