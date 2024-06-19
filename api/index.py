@@ -267,8 +267,8 @@ def add_driver_ride():
         conn.close()
 
         return jsonify({
-            "status": "Sucesso",
-            "mensagem": "Corrida do motorista foi registrada com sucesso.",
+            "status": "Success",
+            "mensagem": "Driver trip recorded in database.",
             "id": new_id
         }), 200
 
