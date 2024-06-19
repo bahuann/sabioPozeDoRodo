@@ -55,13 +55,14 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS driver_rides (
             id SERIAL PRIMARY KEY,
+            order_id VARCHAR(50) NOT NULL,
             driver_id VARCHAR(50) NOT NULL,
-            user_id VARCHAR(50) NOT NULL,
-            start_time TIMESTAMP NOT NULL,
-            end_time TIMESTAMP NOT NULL,
-            start_location VARCHAR(100) NOT NULL,
-            end_location VARCHAR(100) NOT NULL,
-            fare FLOAT NOT NULL
+            order_amt FLOAT NOT NULL,
+            order_fee_amt FLOAT NOT NULL,
+            city_nm VARCHAR(50) NOT NULL,
+            order_start_dttm TIMESTAMP NOT NULL,
+            order_end_dttm TIMESTAMP NOT NULL,
+            order_dt DATE NOT NULL
         )
     ''')
     conn.commit()
