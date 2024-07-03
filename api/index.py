@@ -74,7 +74,7 @@ init_db()
 
 def validate_api_key(api_key):
     # Implement your API key validation logic here
-    valid_api_keys = ["Q4$J8v&Lz2*WbD"]
+    valid_api_keys = ["R//ZD'!95D&&4EG"]
     return api_key in valid_api_keys
 
 @app.route('/companyTrips', methods=['GET'])
